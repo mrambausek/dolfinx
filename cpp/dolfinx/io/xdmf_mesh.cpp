@@ -62,20 +62,16 @@ void xdmf_mesh::add_topology_data(MPI_Comm comm, pugi::xml_node& xml_node,
 
   if (dim == tdim)
   {
+    std::vector<std::int32_t> local_indices;
     for (int c = 0; c < map_e->size_local(); ++c)
     {
       assert(c < cells_g.num_nodes());
       auto nodes = cells_g.links(c);
+      assert(nodes.rows() == num_nodes_per_cell);
       for (int i = 0; i < nodes.rows(); ++i)
-      {
-        std::int64_t global_index = nodes[perm[i]];
-        if (global_index < map_g->size_local())
-          global_index += offset_g;
-        else
-          global_index = ghosts[global_index - map_g->size_local()];
-        topology_data.push_back(global_index);
-      }
+        local_indices.push_back(nodes[perm[i]]);
     }
+    topology_data = map_g->local_to_global(local_indices);
   }
   else
   {
@@ -204,6 +200,18 @@ void xdmf_mesh::add_mesh(MPI_Comm comm, pugi::xml_node& xml_node, hid_t& h5_id,
 
   // Add geometry node and attributes (including writing data)
   add_geometry_data(comm, grid_node, h5_id, path_prefix, mesh.geometry());
+
+  // Add something for persistent cell indices
+  pugi::xml_node attribute_node = xml_node.append_child("Attribute");
+  const std::string h5_path = path_prefix + "/mesh/cell_ids";
+  std::shared_ptr<const common::IndexMap> cell_indexmap
+      = mesh.topology().index_map(tdim);
+  const std::int64_t offset = cell_indexmap->local_range()[0];
+  const std::vector<std::int64_t> shape = {cell_indexmap->size_global(), 1};
+  std::vector<std::int64_t> idx = cell_indexmap->global_indices(false);
+  const bool use_mpi_io = (dolfinx::MPI::size(comm) > 1);
+  xdmf_utils::add_data_item(attribute_node, h5_id, h5_path, idx, offset, shape,
+                            "", use_mpi_io);
 }
 //----------------------------------------------------------------------------
 std::tuple<
