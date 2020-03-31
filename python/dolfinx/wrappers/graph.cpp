@@ -56,7 +56,7 @@ void graph(py::module& m)
   py::class_<dolfinx::graph::AdjacencyList<std::int64_t>,
              std::shared_ptr<dolfinx::graph::AdjacencyList<std::int64_t>>>(
       m, "AdjacencyList64", "Adjacency list")
-      .def(py::init<std::int32_t>())
+      .def(py::init<std::int64_t>())
       .def(py::init<const Eigen::Ref<
                const Eigen::Array<std::int64_t, Eigen::Dynamic, Eigen::Dynamic,
                                   Eigen::RowMajor>>&>())
