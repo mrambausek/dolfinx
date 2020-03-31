@@ -112,7 +112,7 @@ Eigen::SparseMatrix<PetscScalar, Eigen::RowMajor> fem::assemble_matrix_eigen(
                           const PetscScalar*)>
       mat_set_values_local
       = [&triplets](PetscInt nrow, const PetscInt* rows, PetscInt ncol,
-                    const PetscInt* cols, const double* y) {
+                    const PetscInt* cols, const PetscScalar* y) {
           for (int i = 0; i < nrow; ++i)
           {
             int row = rows[i];
