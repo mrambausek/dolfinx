@@ -447,7 +447,7 @@ ksp = PETSc.KSP().create(mesh.mpi_comm())
 ksp.setOperators(A)
 ksp.setType("preonly")
 ksp.getPC().setType("lu")
-ksp.getPC().setFactorSolverType("mumps")
+ksp.getPC().setFactorSolverType("superlu_dist")
 
 # Compute the solution
 U = Function(W)
