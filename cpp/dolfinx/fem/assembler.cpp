@@ -76,7 +76,7 @@ void fem::apply_lifting(
   fem::impl::apply_lifting(b, a, bcs1, x0, scale);
 }
 //-----------------------------------------------------------------------------
-Eigen::SparseMatrix<double, Eigen::RowMajor> fem::assemble_matrix_eigen(
+Eigen::SparseMatrix<PetscScalar, Eigen::RowMajor> fem::assemble_matrix_eigen(
     const Form& a, const std::vector<std::shared_ptr<const DirichletBC>>& bcs)
 {
   // Index maps for dof ranges
@@ -128,7 +128,7 @@ Eigen::SparseMatrix<double, Eigen::RowMajor> fem::assemble_matrix_eigen(
   // Assemble
   impl::assemble_matrix(mat_set_values_local, a, dof_marker0, dof_marker1);
 
-  Eigen::SparseMatrix<double, Eigen::RowMajor> mat(
+  Eigen::SparseMatrix<PetscScalar, Eigen::RowMajor> mat(
       map0->block_size() * (map0->size_local() + map0->num_ghosts()),
       map1->block_size() * (map1->size_local() + map1->num_ghosts()));
   mat.setFromTriplets(triplets.begin(), triplets.end());
