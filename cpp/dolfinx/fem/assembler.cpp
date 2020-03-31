@@ -126,7 +126,8 @@ Eigen::SparseMatrix<PetscScalar, Eigen::RowMajor> fem::assemble_matrix_eigen(
         };
 
   // Assemble
-  impl::assemble_matrix(mat_set_values_local, a, dof_marker0, dof_marker1);
+  impl::assemble_matrix<PetscInt, PetscScalar>(mat_set_values_local, a,
+                                               dof_marker0, dof_marker1);
 
   Eigen::SparseMatrix<PetscScalar, Eigen::RowMajor> mat(
       map0->block_size() * (map0->size_local() + map0->num_ghosts()),
@@ -180,7 +181,8 @@ void fem::assemble_matrix(
         };
 
   // Assemble
-  impl::assemble_matrix(mat_set_values_local, a, dof_marker0, dof_marker1);
+  impl::assemble_matrix<PetscInt, PetscScalar>(mat_set_values_local, a,
+                                               dof_marker0, dof_marker1);
 }
 //-----------------------------------------------------------------------------
 void fem::assemble_matrix(Mat A, const Form& a, const std::vector<bool>& bc0,
@@ -200,7 +202,8 @@ void fem::assemble_matrix(Mat A, const Form& a, const std::vector<bool>& bc0,
           return 0;
         };
 
-  impl::assemble_matrix(mat_set_values_local, a, bc0, bc1);
+  impl::assemble_matrix<PetscInt, PetscScalar>(mat_set_values_local, a, bc0,
+                                               bc1);
 }
 //-----------------------------------------------------------------------------
 void fem::add_diagonal(
