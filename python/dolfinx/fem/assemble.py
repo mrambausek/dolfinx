@@ -29,6 +29,14 @@ def _create_cpp_form(form):
     return form
 
 
+def _extract_test_spaces(L: typing.Iterable[cpp.fem.Form]):
+    return [sub_i.function_space(0) for sub_i in L]
+
+
+def _extract_trial_spaces(a: typing.Iterable[typing.Iterable[cpp.fem.Form]]):
+    return [[sub_ij.function_space(1) if sub_ij is not None else None for sub_ij in sub_i] for sub_i in a]
+
+
 # -- Vector instantiation ----------------------------------------------------
 
 
@@ -70,6 +78,7 @@ def assemble_scalar(M: typing.Union[Form, cpp.fem.Form]) -> PETSc.ScalarType:
 
     """
     return cpp.fem.assemble_scalar(_create_cpp_form(M))
+
 
 # -- Vector assembly ---------------------------------------------------------
 
@@ -165,7 +174,7 @@ def _(b: PETSc.Vec,
         x0_local = []
         x0_sub = [None] * len(maps)
 
-    bcs1 = cpp.fem.bcs_cols(_create_cpp_form(a), bcs)
+    bcs1 = cpp.fem.bcs_cols(_extract_trial_spaces(_create_cpp_form(a)), bcs)
     b_local = cpp.la.get_local_vectors(b, maps)
     for b_sub, L_sub, a_sub, bc in zip(b_local, L, a, bcs1):
         cpp.fem.assemble_vector(b_sub, _create_cpp_form(L_sub))
@@ -174,7 +183,7 @@ def _(b: PETSc.Vec,
     cpp.la.scatter_local_vectors(b, b_local, maps)
     b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
-    bcs0 = cpp.fem.bcs_rows(_create_cpp_form(L), bcs)
+    bcs0 = cpp.fem.bcs_rows(_extract_test_spaces(_create_cpp_form(L)), bcs)
     offset = 0
     b_array = b.getArray(readonly=False)
     for submap, bc, _x0 in zip(maps, bcs0, x0_sub):
@@ -327,7 +336,7 @@ def apply_lifting_nest(b: PETSc.Vec,
     else:
         _x0 = []
     _a = _create_cpp_form(a)
-    bcs1 = cpp.fem.bcs_cols(_a, bcs)
+    bcs1 = cpp.fem.bcs_cols(_extract_trial_spaces(_a), bcs)
     for b_sub, a_sub, bc1 in zip(b.getNestSubVecs(), _a, bcs1):
         cpp.fem.apply_lifting(b_sub, a_sub, bc1, _x0, scale)
 
