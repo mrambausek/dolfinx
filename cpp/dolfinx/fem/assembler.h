@@ -206,8 +206,6 @@ void set_bc(Eigen::Ref<Eigen::Matrix<PetscScalar, Eigen::Dynamic, 1>> b,
             const std::vector<std::shared_ptr<const DirichletBC>>& bcs,
             double scale = 1.0);
 
-// FIXME: Handle null block
-// FIXME: Pass function spaces rather than forms
 /// Arrange boundary conditions by block
 /// @param[in] L Linear forms for each block
 /// @param[in] bcs Boundary conditions
@@ -216,20 +214,20 @@ void set_bc(Eigen::Ref<Eigen::Matrix<PetscScalar, Eigen::Dynamic, 1>> b,
 ///         L[i]. The order within bcs_block[i] preserves the input
 ///         order of the bcs array.
 std::vector<std::vector<std::shared_ptr<const fem::DirichletBC>>>
-bcs_rows(const std::vector<const Form*>& L,
+bcs_rows(const std::vector<std::shared_ptr<const function::FunctionSpace>>& test_spaces,
          const std::vector<std::shared_ptr<const fem::DirichletBC>>& bcs);
 
-// FIXME: Handle null block
-// FIXME: Pass function spaces rather than forms
+// FIXME: Handle null block (Is this the right place to handle this?)
+
 /// Arrange boundary conditions by block
-/// @param[in] a Biinear forms for each block
+/// @param[in] the trial space for each block, nullptr for empty block
 /// @param[in] bcs Boundary conditions
 /// @return The boundary conditions collected by block, i.e.
 ///         bcs_block[i] is the list of boundary conditions applied to
 ///         the trial space of a[i]. The order within bcs_block[i]
 ///         preserves the input order of the bcs array.
 std::vector<std::vector<std::vector<std::shared_ptr<const fem::DirichletBC>>>>
-bcs_cols(const std::vector<std::vector<std::shared_ptr<const Form>>>& a,
+bcs_cols(const std::vector<std::vector<std::shared_ptr<const function::FunctionSpace>>>& trial_spaces,
          const std::vector<std::shared_ptr<const DirichletBC>>& bcs);
 
 } // namespace fem

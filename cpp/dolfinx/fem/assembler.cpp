@@ -321,38 +321,44 @@ void fem::set_bc(Eigen::Ref<Eigen::Matrix<PetscScalar, Eigen::Dynamic, 1>> b,
 }
 //-----------------------------------------------------------------------------
 std::vector<std::vector<std::shared_ptr<const fem::DirichletBC>>>
-fem::bcs_rows(const std::vector<const Form*>& L,
+fem::bcs_rows(const std::vector<std::shared_ptr<const function::FunctionSpace>>& test_spaces,
               const std::vector<std::shared_ptr<const fem::DirichletBC>>& bcs)
 {
   // Pack DirichletBC pointers for rows
   std::vector<std::vector<std::shared_ptr<const fem::DirichletBC>>> bcs0(
-      L.size());
-  for (std::size_t i = 0; i < L.size(); ++i)
+      test_spaces.size());
+  for (std::size_t i = 0; i < test_spaces.size(); ++i)
     for (const std::shared_ptr<const DirichletBC>& bc : bcs)
-      if (L[i]->function_space(0)->contains(*bc->function_space()))
+      if (auto space = test_spaces[i]; space->contains(*bc->function_space()))
         bcs0[i].push_back(bc);
 
   return bcs0;
 }
 //-----------------------------------------------------------------------------
 std::vector<std::vector<std::vector<std::shared_ptr<const fem::DirichletBC>>>>
-fem::bcs_cols(const std::vector<std::vector<std::shared_ptr<const Form>>>& a,
+fem::bcs_cols(const std::vector<std::vector<std::shared_ptr<const function::FunctionSpace>>>& trial_spaces,
               const std::vector<std::shared_ptr<const DirichletBC>>& bcs)
 {
   // Pack DirichletBC pointers for columns
   std::vector<std::vector<std::vector<std::shared_ptr<const fem::DirichletBC>>>>
-      bcs1(a.size());
-  for (std::size_t i = 0; i < a.size(); ++i)
+      bcs1(trial_spaces.size());
+  for (std::size_t i = 0; i < trial_spaces.size(); ++i)
   {
-    for (std::size_t j = 0; j < a[i].size(); ++j)
+    for (std::size_t j = 0; j < trial_spaces[i].size(); ++j)
     {
-      bcs1[i].resize(a[j].size());
+      bcs1[i].resize(trial_spaces[j].size());
       for (const std::shared_ptr<const DirichletBC>& bc : bcs)
       {
-        // FIXME: handle case where a[i][j] is null
-        if (a[i][j])
+        // FIXME: handle case where trial_spaces[i][j] is null
+        // NOTE: What would that correspond to? Setting a constraint on a
+        // Lagrange multiplier? Probably, the only reasonable constraint here is
+        // to set a multipllier to zero, meaning no weak constraint is enforced.
+        // This is probably better handled by a restriction of the multipliers
+        // to the domain where they are needed.
+        if (trial_spaces[i][j])
         {
-          if (a[i][j]->function_space(1)->contains(*bc->function_space()))
+          if (auto space = trial_spaces[i][j];
+              space->contains(*bc->function_space()))
             bcs1[i][j].push_back(bc);
         }
       }
