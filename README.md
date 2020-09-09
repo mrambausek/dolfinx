@@ -1,8 +1,9 @@
 # DOLFINX
 
+[![Actions CI tests](https://github.com/FEniCS/dolfinx/workflows/DOLFINX%20CI%20tests/badge.svg)](https://github.com/FEniCS/dolfinx/actions?query=workflow%3A%22DOLFINX+CI%22)
+[![Actions Docker environment images](https://github.com/FEniCS/dolfinx/workflows/Docker%20environment%20images/badge.svg)](https://github.com/FEniCS/dolfinx/actions?query=workflow%3A%22Docker+environment+images%22)
+[![Actions Docker image builds](https://github.com/FEniCS/dolfinx/workflows/Docker%20end-user%20images/badge.svg)](https://github.com/FEniCS/dolfinx/actions?query=workflow%3A%22Docker+end-user+images%22)
 [![CircleCI](https://circleci.com/gh/FEniCS/dolfinx.svg?style=shield)](https://circleci.com/gh/FEniCS/dolfinx)
-![DOLFINX CI tests](https://github.com/FEniCS/dolfinx/workflows/DOLFINX%20CI%20tests/badge.svg)
-![CI Docker images](https://github.com/FEniCS/dolfinx/workflows/CI%20Docker%20images/badge.svg)
 
 DOLFINX is a new version of DOLFIN. It is being actively developed and
 features may come and go as development proceeds.
@@ -43,7 +44,32 @@ For detailed instructions, see the file INSTALL.
 
 ## Docker
 
-Nightly Docker images are available at https://hub.docker.com/u/dolfinx.
+A Docker image with DOLFINX built nightly:
+
+```
+docker run -ti dolfinx/dolfinx
+```
+
+To switch between real and complex builds of DOLFINX.
+```
+source /usr/local/bin/dolfinx-complex-mode
+source /usr/local/bin/dolfinx-real-mode
+```
+
+A Jupyter Lab environment with DOLFINX built nightly:
+
+```
+docker run -ti -p 8888:8888 dolfinx/lab # Access at http://localhost:8888
+```
+
+A development image with all of the dependencies required
+to build DOLFINX:
+
+```
+docker run -ti dolfinx/dev-env
+```
+
+For more information, see https://hub.docker.com/u/dolfinx
 
 ## License
 

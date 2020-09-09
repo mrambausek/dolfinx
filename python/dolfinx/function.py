@@ -10,7 +10,6 @@ from functools import singledispatch
 
 import cffi
 import numpy as np
-from petsc4py import PETSc
 
 import ufl
 from dolfinx import common, cpp, fem, function, jit
@@ -49,7 +48,7 @@ class Function(ufl.Coefficient):
 
     def __init__(self,
                  V: "FunctionSpace",
-                 x: typing.Optional[PETSc.Vec] = None,
+                 x: typing.Optional[cpp.la.Vector] = None,
                  name: typing.Optional[str] = None):
         """Initialize finite element Function."""
 
@@ -161,6 +160,11 @@ class Function(ufl.Coefficient):
         return self._cpp_object.vector
 
     @property
+    def x(self):
+        """Return the vector holding Function degrees-of-freedom."""
+        return self._cpp_object.x
+
+    @property
     def name(self) -> str:
         """Name of the Function."""
         return self._cpp_object.name
@@ -185,8 +189,7 @@ class Function(ufl.Coefficient):
         total number of sub spaces.
 
         """
-        return Function(
-            self._V.sub(i), self.vector, name="{}-{}".format(str(self), i))
+        return Function(self._V.sub(i), self.x, name="{}-{}".format(str(self), i))
 
     def split(self):
         """Extract any sub functions.
@@ -205,7 +208,7 @@ class Function(ufl.Coefficient):
         u_collapsed = self._cpp_object.collapse()
         V_collapsed = function.FunctionSpace(None, self.ufl_element(),
                                              u_collapsed.function_space)
-        return Function(V_collapsed, u_collapsed.vector)
+        return Function(V_collapsed, u_collapsed.x)
 
 
 class ElementMetaData(typing.NamedTuple):
@@ -221,7 +224,9 @@ class FunctionSpace(ufl.FunctionSpace):
     def __init__(self,
                  mesh: cpp.mesh.Mesh,
                  element: typing.Union[ufl.FiniteElementBase, ElementMetaData],
-                 cppV: typing.Optional[cpp.function.FunctionSpace] = None):
+                 cppV: typing.Optional[cpp.function.FunctionSpace] = None,
+                 form_compiler_parameters: dict = {},
+                 jit_parameters: dict = {}):
         """Create a finite element function space."""
 
         # Create function space from a UFL element and existing cpp
@@ -243,7 +248,8 @@ class FunctionSpace(ufl.FunctionSpace):
 
         # Compile dofmap and element and create DOLFIN objects
         ufc_element, ufc_dofmap_ptr = jit.ffcx_jit(
-            self.ufl_element(), form_compiler_parameters=None, mpi_comm=mesh.mpi_comm())
+            self.ufl_element(), mpi_comm=mesh.mpi_comm(), form_compiler_parameters=form_compiler_parameters,
+            jit_parameters=jit_parameters)
 
         ffi = cffi.FFI()
         cpp_element = cpp.fem.FiniteElement(ffi.cast("uintptr_t", ufc_element))
@@ -342,9 +348,6 @@ class FunctionSpace(ufl.FunctionSpace):
     def mesh(self):
         """Return the mesh on which the function space is defined."""
         return self._cpp_object.mesh
-
-    def set_x(self, basis, x, component) -> None:
-        return self._cpp_object.set_x(basis, x, component)
 
     def collapse(self, collapsed_dofs: bool = False):
         """Collapse a subspace and return a new function space and a map from

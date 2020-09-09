@@ -12,7 +12,7 @@ from dolfinx import cpp, jit
 
 
 class Form:
-    def __init__(self, form: ufl.Form, form_compiler_parameters: dict = None):
+    def __init__(self, form: ufl.Form, form_compiler_parameters: dict = {}, jit_parameters: dict = {}):
         """Create dolfinx Form
 
         Parameters
@@ -20,7 +20,10 @@ class Form:
         form
             Pure UFL form
         form_compiler_parameters
-            Parameters used in JIT FFCX compilation of this form
+            Parameters used in FFCX compilation of this form. Run `ffcx --help` in the commandline
+            to see all available options.
+        jit_parameters
+            Parameters controlling JIT compilation of C code.
 
         Note
         ----
@@ -28,7 +31,6 @@ class Form:
         and attaching coefficients and domains specific data to the underlying
         C++ Form.
         """
-        self.form_compiler_parameters = form_compiler_parameters
 
         # Extract subdomain data from UFL form
         sd = form.subdomain_data()
@@ -39,7 +41,8 @@ class Form:
         # Compile UFL form with JIT
         ufc_form = jit.ffcx_jit(
             form,
-            form_compiler_parameters=self.form_compiler_parameters,
+            form_compiler_parameters=form_compiler_parameters,
+            jit_parameters=jit_parameters,
             mpi_comm=mesh.mpi_comm())
 
         # For every argument in form extract its function space
@@ -47,7 +50,7 @@ class Form:
             func.ufl_function_space()._cpp_object for func in form.arguments()
         ]
 
-        # Prepare dolfinx.Form and hold it as a member
+        # Prepare dolfinx.cpp.fem.Form and hold it as a member
         ffi = cffi.FFI()
         self._cpp_object = cpp.fem.create_form(ffi.cast("uintptr_t", ufc_form), function_spaces)
 
@@ -56,8 +59,7 @@ class Form:
         original_coefficients = form.coefficients()
         for i in range(self._cpp_object.num_coefficients()):
             j = self._cpp_object.original_coefficient_position(i)
-            self._cpp_object.set_coefficient(
-                i, original_coefficients[j]._cpp_object)
+            self._cpp_object.set_coefficient(i, original_coefficients[j]._cpp_object)
 
         # Constants are set based on their position in original form
         original_constants = [c._cpp_object for c in form.constants()]
@@ -75,16 +77,16 @@ class Form:
         # Attach subdomains to C++ Form if we have them
         subdomains = self._subdomains.get("cell")
         if subdomains:
-            self._cpp_object.set_cell_domains(subdomains)
+            self._cpp_object.integrals.set_domains(cpp.fem.IntegralType.cell, subdomains)
 
         subdomains = self._subdomains.get("exterior_facet")
         if subdomains:
-            self._cpp_object.set_exterior_facet_domains(subdomains)
+            self._cpp_object.integrals.set_domains(cpp.fem.IntegralType.exterior_facet, subdomains)
 
         subdomains = self._subdomains.get("interior_facet")
         if subdomains:
-            self._cpp_object.set_interior_facet_domains(subdomains)
+            self._cpp_object.integrals.set_domains(cpp.fem.IntegralType.interior_facet, subdomains)
 
         subdomains = self._subdomains.get("vertex")
         if subdomains:
-            self._cpp_object.set_vertex_domains(subdomains)
+            self._cpp_object.integrals.set_domains(cpp.fem.IntegralType.vertex, subdomains)
